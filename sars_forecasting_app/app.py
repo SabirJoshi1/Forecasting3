@@ -91,18 +91,48 @@ with tab1:
     st.header("🎯 Forecasting Objective")
     st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
 
-   st.subheader("📌 Key Performance Indicators")
+  st.subheader("📌 Key Performance Indicators")
 
-# Build KPI table
-kpi_data = {
-    "Metric": ["🗓️ Total Forecast Period", "📈 Avg Forecasted Sales", "📉 Validation RMSE"],
-    "Value": [f"{len(val_dates)} days", f"${forecast.mean():,.0f}", f"${rmse:,.0f}"]
-}
-kpi_df = pd.DataFrame(kpi_data)
+# Inject bordered container for KPIs with dark-mode compatible background
+st.markdown("""
+<div style='
+    border: 1px solid #555;
+    border-radius: 15px;
+    padding: 2rem;
+    background-color: rgba(30, 30, 30, 0.6);
+    margin-bottom: 2rem;
+'>
+""", unsafe_allow_html=True)
 
-# Display as styled table
-st.markdown("### 🔍 Forecast Summary")
-st.table(kpi_df)
+# KPI columns with tooltips and larger icons/text
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+    <div title='Total number of days in the forecast evaluation period'>
+        <h4 style='margin-bottom: 0.2rem;'>🗓️ Forecast Period</h4>
+        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"{len(val_dates)} days" + """</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown("""
+    <div title='Average predicted sales value over the forecast period'>
+        <h4 style='margin-bottom: 0.2rem;'>📈 Avg Forecasted Sales</h4>
+        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"${forecast.mean():,.0f}" + """</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown("""
+    <div title='Root Mean Squared Error – measures forecast accuracy'>
+        <h4 style='margin-bottom: 0.2rem;'>📉 Validation RMSE</h4>
+        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"${rmse:,.0f}" + """</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Close bordered box
+st.markdown("</div>", unsafe_allow_html=True)
 
     st.subheader("📉 Forecast vs Actual Sales")
     fig = go.Figure()

@@ -136,7 +136,7 @@ with tab1:
         "Forecasted Sales": "{:.0f}"
     }), use_container_width=True)
 
-     with st.container():
+with st.container():
         st.markdown("""
         <div class="section">
             <h2>📈 Forecast vs Recommended Inventory Level</h2><p style='font-size:14px;'>This visualization shows how recommended inventory levels align with forecasted sales, helping to plan restocking cycles and avoid shortages or surplus.</p>

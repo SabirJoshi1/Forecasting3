@@ -91,7 +91,7 @@ with tab1:
     st.header("🎯 Forecasting Objective")
     st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
 
-  st.subheader("📌 Key Performance Indicators")
+st.subheader("📌 Key Performance Indicators")
 
 # Inject bordered container for KPIs with dark-mode compatible background
 st.markdown("""

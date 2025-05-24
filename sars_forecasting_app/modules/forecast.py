@@ -14,9 +14,9 @@ def apply_arimax(df):
     }).asfreq('D').fillna(method='ffill')
     df['Date'] = df.index
 
-    latest_year = df.last('365D')
+    latest_year = df.loc[df.index >= (df.index.max() - pd.Timedelta(days=365))].copy()
     latest_year['log_sales'] = np.log1p(latest_year['Sales'])
-
+    
     log_sales_series = latest_year['log_sales']
     exog = latest_year[['Holiday', '#Order', 'Discount', 'Store_id']]
     n = len(log_sales_series)

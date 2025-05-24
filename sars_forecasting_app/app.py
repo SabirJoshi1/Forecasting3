@@ -136,6 +136,22 @@ with tab1:
         "Forecasted Sales": "{:.0f}"
     }), use_container_width=True)
 
+     with st.container():
+        st.markdown("""
+        <div class="section">
+            <h2>📈 Forecast vs Recommended Inventory Level</h2><p style='font-size:14px;'>This visualization shows how recommended inventory levels align with forecasted sales, helping to plan restocking cycles and avoid shortages or surplus.</p>
+        """, unsafe_allow_html=True)
+        trace1 = go.Scatter(x=val_dates, y=forecast, mode='lines', name=f'Forecasted Sales - {selected_store_type}', line=dict(color='blue'))
+        trace2 = go.Scatter(x=val_dates, y=recommended_stock, mode='lines', name='Recommended Stock Level', line=dict(dash='dash', color='orange'))
+        trace3 = go.Scatter(x=val_dates, y=recommended_stock - forecast, fill='tonexty', mode='none', name='Safety Buffer', fillcolor='rgba(255,165,0,0.3)')
+        layout2 = go.Layout(title='Forecast vs Recommended Inventory Level',
+                            xaxis_title='Date',
+                            yaxis_title=f'Units ({selected_store_type}, {selected_region}, {selected_location_type})',
+                            hovermode='x unified')
+        fig2 = go.Figure(data=[trace1, trace2, trace3], layout=layout2)
+        st.plotly_chart(fig2, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
     # Inventory Plan
     st.subheader("📦 Inventory Plan")
     st.dataframe(inventory_df.style.format({

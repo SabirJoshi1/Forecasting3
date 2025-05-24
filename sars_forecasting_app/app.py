@@ -129,12 +129,23 @@ with tab1:
     fig.update_layout(title='Forecast vs Actual', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
 
+   
     # Forecast Table
     st.subheader("📋 Forecast Table")
     st.dataframe(forecast_df.style.format({
         "Actual Sales": "{:.0f}",
         "Forecasted Sales": "{:.0f}"
     }), use_container_width=True)
+    
+     # Inventory Plan
+    st.subheader("📦 Inventory Plan")
+    st.dataframe(inventory_df.style.format({
+        "Forecasted Sales": "{:.0f}",
+        "Recommended Stock Level": "{:.0f}",
+        "Safety Stock": "{:.0f}"
+    }), use_container_width=True)
+
+
 
 with st.container():
         st.markdown("""
@@ -152,13 +163,7 @@ with st.container():
         st.plotly_chart(fig2, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Inventory Plan
-    st.subheader("📦 Inventory Plan")
-    st.dataframe(inventory_df.style.format({
-        "Forecasted Sales": "{:.0f}",
-        "Recommended Stock Level": "{:.0f}",
-        "Safety Stock": "{:.0f}"
-    }), use_container_width=True)
+   
 
 with tab2:
     st.header("📁 Download Reports")

@@ -91,12 +91,18 @@ with tab1:
     st.header("🎯 Forecasting Objective")
     st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
 
-    st.subheader("📌 Key Performance Indicators")
-    kpi_df = pd.DataFrame({
-        'KPI': ['Total Forecast Period', 'Avg Forecasted Sales', 'Validation RMSE'],
-        'Value': [f"{len(val_dates)} days", f"${forecast.mean():,.0f}", f"${rmse:,.0f}"]
-    })
-    st.dataframe(kpi_df, use_container_width=True)
+   st.subheader("📌 Key Performance Indicators")
+
+# Build KPI table
+kpi_data = {
+    "Metric": ["🗓️ Total Forecast Period", "📈 Avg Forecasted Sales", "📉 Validation RMSE"],
+    "Value": [f"{len(val_dates)} days", f"${forecast.mean():,.0f}", f"${rmse:,.0f}"]
+}
+kpi_df = pd.DataFrame(kpi_data)
+
+# Display as styled table
+st.markdown("### 🔍 Forecast Summary")
+st.table(kpi_df)
 
     st.subheader("📉 Forecast vs Actual Sales")
     fig = go.Figure()

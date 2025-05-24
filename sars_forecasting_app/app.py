@@ -9,10 +9,7 @@ from modules.forecast import apply_arimax
 
 st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
 
-# --- Theme Toggle ---
-theme_mode = st.sidebar.radio("🎨 Theme Mode", ["Dark", "Light"], index=0)
 
-if theme_mode == "Dark":
     st.markdown("""
         <style>
             body {
@@ -45,32 +42,7 @@ if theme_mode == "Dark":
             }
         </style>
     """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <style>
-            html, body, [class*="css"] {
-                background-color: #ffffff;
-                color: #111;
-                font-family: "Segoe UI", sans-serif;
-            }
-            .stButton>button {
-                background-color: #0057a8;
-                color: white;
-                font-weight: bold;
-            }
-            h1, h2 {
-                color: #0057a8;
-                margin-top: 2rem;
-            }
-            h3, h4 {
-                color: #228be6;
-            }
-            .section-text {
-                font-size: 16px;
-                padding-bottom: 1rem;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+
 
 # --- Heading ---
 st.markdown("<h1 style='text-align: center;'>📊 SARS Forecasting Platform</h1>", unsafe_allow_html=True)

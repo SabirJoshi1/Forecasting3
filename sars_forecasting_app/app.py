@@ -134,15 +134,15 @@ with col3:
 # Close bordered box
 st.markdown("</div>", unsafe_allow_html=True)
 
-    st.subheader("📉 Forecast vs Actual Sales")
+st.subheader("📉 Forecast vs Actual Sales")
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=val_dates, y=actual, mode='lines', name='Actual', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
     fig.add_trace(go.Scatter(x=val_dates, y=forecast, mode='lines', name='Forecast', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
     fig.update_layout(title='Forecast vs Actual', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📋 Forecast Table")
-    st.dataframe(forecast_df.style.format({"Actual Sales": "{:.0f}", "Forecasted Sales": "{:.0f}"}), use_container_width=True)
+st.subheader("📋 Forecast Table")
+st.dataframe(forecast_df.style.format({"Actual Sales": "{:.0f}", "Forecasted Sales": "{:.0f}"}), use_container_width=True)
 
     st.subheader("📦 Inventory Plan")
     st.dataframe(inventory_df.style.format({

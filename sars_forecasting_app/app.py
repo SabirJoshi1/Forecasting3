@@ -9,42 +9,41 @@ from modules.forecast import apply_arimax
 
 st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
 
-
+# --- Custom CSS Style ---
 st.markdown("""
-        <style>
-            body {
-                background-image: url('1B.jpg');
-                background-size: cover;
-                background-repeat: no-repeat;
-                background-attachment: fixed;
-                background-position: center;
-            }
-            html, body, [class*="css"] {
-                background-color: rgba(0, 0, 0, 0.85);
-                color: #f0f0f0;
-                font-family: "Segoe UI", sans-serif;
-            }
-            .stButton>button {
-                background-color: #00c3ff;
-                color: white;
-                font-weight: bold;
-            }
-            h1, h2 {
-                color: #00c3ff;
-                margin-top: 2rem;
-            }
-            h3, h4 {
-                color: #66e0ff;
-            }
-            .section-text {
-                font-size: 16px;
-                padding-bottom: 1rem;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+        body {
+            background-image: url('1B.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+        }
+        html, body, [class*="css"] {
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #f0f0f0;
+            font-family: "Segoe UI", sans-serif;
+        }
+        .stButton>button {
+            background-color: #00c3ff;
+            color: white;
+            font-weight: bold;
+        }
+        h1, h2 {
+            color: #00c3ff;
+            margin-top: 2rem;
+        }
+        h3, h4 {
+            color: #66e0ff;
+        }
+        .section-text {
+            font-size: 16px;
+            padding-bottom: 1rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-
-# --- Heading ---
+# --- Header ---
 st.markdown("<h1 style='text-align: center;'>📊 SARS Forecasting Platform</h1>", unsafe_allow_html=True)
 
 st.markdown("""
@@ -63,7 +62,7 @@ if not uploaded_file:
 
 raw_df = load_data(uploaded_file)
 
-# --- Filters ---
+# --- Sidebar Filters ---
 if 'filters_applied' not in st.session_state:
     st.session_state.filters_applied = False
 
@@ -78,9 +77,11 @@ with st.sidebar:
 if not st.session_state.filters_applied:
     st.stop()
 
-filtered_df = raw_df[(raw_df['Region_Code'] == selected_region) &
-                     (raw_df['Store_Type'] == selected_store_type) &
-                     (raw_df['Location_Type'] == selected_location_type)]
+filtered_df = raw_df[
+    (raw_df['Region_Code'] == selected_region) &
+    (raw_df['Store_Type'] == selected_store_type) &
+    (raw_df['Location_Type'] == selected_location_type)
+]
 
 forecast_df, inventory_df, summary_df, forecast, actual, val_dates, safety_stock, recommended_stock, rmse = apply_arimax(filtered_df)
 
@@ -91,59 +92,60 @@ with tab1:
     st.header("🎯 Forecasting Objective")
     st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
 
-st.subheader("📌 Key Performance Indicators")
-
-# Inject bordered container for KPIs with dark-mode compatible background
-st.markdown("""
-<div style='
-    border: 1px solid #555;
-    border-radius: 15px;
-    padding: 2rem;
-    background-color: rgba(30, 30, 30, 0.6);
-    margin-bottom: 2rem;
-'>
-""", unsafe_allow_html=True)
-
-# KPI columns with tooltips and larger icons/text
-col1, col2, col3 = st.columns(3)
-
-with col1:
+    st.subheader("📌 Key Performance Indicators")
     st.markdown("""
-    <div title='Total number of days in the forecast evaluation period'>
-        <h4 style='margin-bottom: 0.2rem;'>🗓️ Forecast Period</h4>
-        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"{len(val_dates)} days" + """</p>
-    </div>
+    <div style='
+        border: 1px solid #555;
+        border-radius: 15px;
+        padding: 2rem;
+        background-color: rgba(30, 30, 30, 0.6);
+        margin-bottom: 2rem;
+    '>
     """, unsafe_allow_html=True)
 
-with col2:
-    st.markdown("""
-    <div title='Average predicted sales value over the forecast period'>
-        <h4 style='margin-bottom: 0.2rem;'>📈 Avg Forecasted Sales</h4>
-        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"${forecast.mean():,.0f}" + """</p>
-    </div>
-    """, unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""
+        <div title='Total number of days in the forecast evaluation period'>
+            <h4 style='margin-bottom: 0.2rem;'>🗓️ Forecast Period</h4>
+            <p style='font-size: 24px; font-weight: bold; margin: 0;'>{len(val_dates)} days</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-with col3:
-    st.markdown("""
-    <div title='Root Mean Squared Error – measures forecast accuracy'>
-        <h4 style='margin-bottom: 0.2rem;'>📉 Validation RMSE</h4>
-        <p style='font-size: 24px; font-weight: bold; margin: 0;'>""" + f"${rmse:,.0f}" + """</p>
-    </div>
-    """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div title='Average predicted sales value over the forecast period'>
+            <h4 style='margin-bottom: 0.2rem;'>📈 Avg Forecasted Sales</h4>
+            <p style='font-size: 24px; font-weight: bold; margin: 0;'>${forecast.mean():,.0f}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Close bordered box
-st.markdown("</div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div title='Root Mean Squared Error – measures forecast accuracy'>
+            <h4 style='margin-bottom: 0.2rem;'>📉 Validation RMSE</h4>
+            <p style='font-size: 24px; font-weight: bold; margin: 0;'>${rmse:,.0f}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-st.subheader("📉 Forecast vs Actual Sales")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Forecast Chart
+    st.subheader("📉 Forecast vs Actual Sales")
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=val_dates, y=actual, mode='lines', name='Actual', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
     fig.add_trace(go.Scatter(x=val_dates, y=forecast, mode='lines', name='Forecast', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
     fig.update_layout(title='Forecast vs Actual', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("📋 Forecast Table")
-st.dataframe(forecast_df.style.format({"Actual Sales": "{:.0f}", "Forecasted Sales": "{:.0f}"}), use_container_width=True)
+    # Forecast Table
+    st.subheader("📋 Forecast Table")
+    st.dataframe(forecast_df.style.format({
+        "Actual Sales": "{:.0f}",
+        "Forecasted Sales": "{:.0f}"
+    }), use_container_width=True)
 
+    # Inventory Plan
     st.subheader("📦 Inventory Plan")
     st.dataframe(inventory_df.style.format({
         "Forecasted Sales": "{:.0f}",
@@ -170,8 +172,9 @@ with tab3:
     total_error = summary_df['Error'].abs().sum()
     avg_stock_buffer = summary_df['Safety Stock'].mean()
     days_understock = (summary_df['Error'] > avg_stock_buffer).sum()
+
     st.markdown(f"""
-    - **Total Absolute Forecast Error:** {total_error:,.0f} units
-    - **Average Safety Stock:** {avg_stock_buffer:,.0f} units
+    - **Total Absolute Forecast Error:** {total_error:,.0f} units  
+    - **Average Safety Stock:** {avg_stock_buffer:,.0f} units  
     - **Days Understocked:** {days_understock} days
     """)

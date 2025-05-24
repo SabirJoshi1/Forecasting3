@@ -10,7 +10,7 @@ from modules.forecast import apply_arimax
 st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
 
 
-    st.markdown("""
+st.markdown("""
         <style>
             body {
                 background-image: url('1B.jpg');

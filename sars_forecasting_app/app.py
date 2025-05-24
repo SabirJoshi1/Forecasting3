@@ -157,7 +157,7 @@ with st.container():
         trace3 = go.Scatter(x=val_dates, y=recommended_stock - forecast, fill='tonexty', mode='none', name='Safety Buffer', fillcolor='rgba(255,165,0,0.3)')
         layout2 = go.Layout(title='Forecast vs Recommended Inventory Level',
                             xaxis_title='Date',
-                            yaxis_title=f'Units ({selected_store_type}, {selected_region}, {selected_location_type})',
+                            yaxis_title='Sales Volume',
                             hovermode='x unified')
         fig2 = go.Figure(data=[trace1, trace2, trace3], layout=layout2)
         st.plotly_chart(fig2, use_container_width=True)

@@ -93,16 +93,7 @@ with tab1:
     st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
 
     st.subheader("📌 Key Performance Indicators")
-    st.markdown("""
-    <div style='
-        border: 1px solid #555;
-        border-radius: 15px;
-        padding: 2rem;
-        background-color: rgba(30, 30, 30, 0.6);
-        margin-bottom: 2rem;
-    '>
-    """, unsafe_allow_html=True)
-
+    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"""

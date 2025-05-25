@@ -148,20 +148,61 @@ with tab1:
 
 
 with st.container():
-        st.markdown("""
-        <div class="section">
-            <h2>📈 Forecast vs Recommended Inventory Level</h2><p style='font-size:14px;'>This visualization shows how recommended inventory levels align with forecasted sales, helping to plan restocking cycles and avoid shortages or surplus.</p>
-        """, unsafe_allow_html=True)
-        trace1 = go.Scatter(x=val_dates, y=forecast, mode='lines', name=f'Forecasted Sales - {selected_store_type}', line=dict(color='blue'))
-        trace2 = go.Scatter(x=val_dates, y=recommended_stock, mode='lines', name='Recommended Stock Level', line=dict(dash='dash', color='orange'))
-        trace3 = go.Scatter(x=val_dates, y=recommended_stock - forecast, fill='tonexty', mode='none', name='Safety Buffer', fillcolor='rgba(255,165,0,0.3)')
-        layout2 = go.Layout(title='Forecast vs Recommended Inventory Level',
-                            xaxis_title='Date',
-                            yaxis_title='Sales Volume',
-                            hovermode='x unified')
-        fig2 = go.Figure(data=[trace1, trace2, trace3], layout=layout2)
-        st.plotly_chart(fig2, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="section">
+        <h2>📈 Forecast vs Recommended Inventory Level</h2>
+        <p style='font-size:14px;'>This visualization shows how recommended inventory levels align with forecasted sales, helping to plan restocking cycles and avoid shortages or surplus.</p>
+    """, unsafe_allow_html=True)
+
+    # Line: Forecasted Sales
+    forecast_trace = go.Scatter(
+        x=val_dates,
+        y=forecast,
+        mode='lines',
+        name=f'Forecasted Sales - {selected_store_type}',
+        line=dict(color='blue')
+    )
+
+    # Line: Recommended Stock Level
+    stock_trace = go.Scatter(
+        x=val_dates,
+        y=recommended_stock,
+        mode='lines',
+        name='Recommended Stock Level',
+        line=dict(dash='dash', color='orange')
+    )
+
+    # Area: Safety Buffer (between forecast and recommended stock)
+    upper = go.Scatter(
+        x=val_dates,
+        y=np.maximum(forecast, recommended_stock),
+        mode='lines',
+        line=dict(width=0),
+        showlegend=False
+    )
+
+    lower = go.Scatter(
+        x=val_dates,
+        y=np.minimum(forecast, recommended_stock),
+        mode='lines',
+        fill='tonexty',
+        name='Safety Buffer',
+        fillcolor='rgba(255,165,0,0.3)',
+        line=dict(width=0)
+    )
+
+    layout = go.Layout(
+        title='Forecast vs Recommended Inventory Level',
+        xaxis_title='Date',
+        yaxis_title='Sales Volume',
+        hovermode='x unified'
+    )
+
+    fig = go.Figure(data=[forecast_trace, stock_trace, upper, lower], layout=layout)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
    
 

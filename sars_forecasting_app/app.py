@@ -185,7 +185,7 @@ def main():
     st.subheader("📏 RMSE Comparison")
     comparison_df = pd.DataFrame({
         "Model": ["ARIMAX", "Naive", "Mean"],
-        "RMSE": [results['rmse'], results['baseline_rmse_naive'], results['baseline_rmse_mean']]
+        "RMSE": [results["rmse"], results["baseline_rmse_naive"], results["baseline_rmse_mean"]]
     })
     st.dataframe(comparison_df)
 
@@ -194,7 +194,11 @@ def main():
         y=comparison_df["RMSE"],
         marker_color=["deepskyblue", "lightgray", "gray"]
     ))
-    comp_fig.update_layout(title="RMSE Comparison", xaxis_title="Model", yaxis_title="RMSE")
+    comp_fig.update_layout(
+        title="RMSE Comparison",
+        xaxis_title="Model",
+        yaxis_title="RMSE"
+    )
     st.plotly_chart(comp_fig, use_container_width=True)
 
     except Exception as e:
@@ -202,4 +206,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

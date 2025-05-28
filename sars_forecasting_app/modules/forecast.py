@@ -1,11 +1,21 @@
+
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+def run_baseline_naive(series):
+    forecast = series.shift(1).dropna()
+    actual = series[1:]
+    return actual, forecast
+
+def run_baseline_mean(series):
+    forecast = pd.Series(series.mean(), index=series.index)
+    return series, forecast
+
 def run_full_forecast_pipeline(df):
     if df.empty or len(df) < 30:
-        return None  # or raise an error depending on UX strategy
+        return None
 
     # Preprocessing & Aggregation
     df = df.groupby('Date').agg({
@@ -17,7 +27,6 @@ def run_full_forecast_pipeline(df):
     }).asfreq('D').ffill()
     df['Date'] = df.index
 
-    # Focus on last 365 days
     latest_year = df[df.index >= (df.index.max() - pd.Timedelta(days=365))].copy()
     latest_year['log_sales'] = np.log1p(latest_year['Sales'])
 
@@ -25,7 +34,6 @@ def run_full_forecast_pipeline(df):
     exog = latest_year[['Holiday', '#Order', 'Discount', 'Store_id']]
     n = len(log_sales_series)
 
-    # Data Split
     train_end = int(n * 0.8)
     val_end = int(n * 0.9)
 
@@ -37,23 +45,19 @@ def run_full_forecast_pipeline(df):
     val_exog = exog[train_end:val_end]
     test_exog = exog[val_end:]
 
-    # Model
     model = ARIMA(train_y, order=(2, 1, 2), exog=train_exog)
     model_fit = model.fit()
 
-    # Forecast on validation
     forecast_log = model_fit.forecast(steps=len(val_y), exog=val_exog)
     forecast = np.expm1(forecast_log)
     actual = np.expm1(val_y)
     val_dates = latest_year.index[train_end:val_end]
 
-    # Metrics
     rmse = np.sqrt(mean_squared_error(actual, forecast))
     mae = mean_absolute_error(actual, forecast)
     safety_stock = forecast.std() * 1.5
     recommended_stock = forecast + safety_stock
 
-    # Forecast Table
     forecast_df = pd.DataFrame({
         'Date': val_dates,
         'Actual Sales': actual.values,
@@ -76,15 +80,24 @@ def run_full_forecast_pipeline(df):
         'Safety Stock': safety_stock
     })
 
+    # Baseline comparisons
+    baseline_actual_naive, baseline_forecast_naive = run_baseline_naive(actual)
+    baseline_rmse_naive = np.sqrt(mean_squared_error(baseline_actual_naive, baseline_forecast_naive))
+
+    baseline_actual_mean, baseline_forecast_mean = run_baseline_mean(actual)
+    baseline_rmse_mean = np.sqrt(mean_squared_error(baseline_actual_mean, baseline_forecast_mean))
+
     return {
         'forecast_df': forecast_df,
         'inventory_df': inventory_df,
         'summary_df': summary_df,
         'forecast': forecast,
         'actual': actual,
-        'test_dates': val_dates,  # using validation window
+        'test_dates': val_dates,
         'safety_stock': safety_stock,
         'recommended_stock': recommended_stock,
         'rmse': rmse,
-        'mae': mae
+        'mae': mae,
+        'baseline_rmse_naive': baseline_rmse_naive,
+        'baseline_rmse_mean': baseline_rmse_mean
     }

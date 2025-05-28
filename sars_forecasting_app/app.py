@@ -148,6 +148,7 @@ def main():
     setup_page()
     filtered_df = load_and_filter_data()
     try:
+        # Ensure this block starts properly and indentation is correct
         results = run_full_forecast_pipeline(filtered_df)
         if results is None:
             return
@@ -182,27 +183,28 @@ def main():
 
             st.write(f"Average RMSE: {np.nanmean(cv_scores):,.2f}")
 
-    st.subheader("📏 RMSE Comparison")
-    comparison_df = pd.DataFrame({
-        "Model": ["ARIMAX", "Naive", "Mean"],
-        "RMSE": [results["rmse"], results["baseline_rmse_naive"], results["baseline_rmse_mean"]]
-    })
-    st.dataframe(comparison_df)
+        st.subheader("📏 RMSE Comparison")
+        comparison_df = pd.DataFrame({
+            "Model": ["ARIMAX", "Naive", "Mean"],
+            "RMSE": [results["rmse"], results["baseline_rmse_naive"], results["baseline_rmse_mean"]]
+        })
+        st.dataframe(comparison_df)
 
-    comp_fig = go.Figure(go.Bar(
-        x=comparison_df["Model"],
-        y=comparison_df["RMSE"],
-        marker_color=["deepskyblue", "lightgray", "gray"]
-    ))
-    comp_fig.update_layout(
-        title="RMSE Comparison",
-        xaxis_title="Model",
-        yaxis_title="RMSE"
-    )
-    st.plotly_chart(comp_fig, use_container_width=True)
+        comp_fig = go.Figure(go.Bar(
+            x=comparison_df["Model"],
+            y=comparison_df["RMSE"],
+            marker_color=["deepskyblue", "lightgray", "gray"]
+        ))
+        comp_fig.update_layout(
+            title="RMSE Comparison",
+            xaxis_title="Model",
+            yaxis_title="RMSE"
+        )
+        st.plotly_chart(comp_fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
+

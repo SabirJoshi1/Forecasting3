@@ -1,15 +1,7 @@
-
-import numpy as np
-import pandas as pd
-from statsmodels.tsa.arima.model import ARIMA
-from sklearn.metrics import mean_squared_error
-
 def apply_arimax(df):
     if df.empty or len(df) < 30:
         raise ValueError("❗ Not enough data for forecasting. Please adjust your filters.")
 
-
-def apply_arimax(df):
     df = df.groupby('Date').agg({
         'Sales': 'sum',
         'Holiday': 'max',
@@ -25,14 +17,19 @@ def apply_arimax(df):
     log_sales_series = latest_year['log_sales']
     exog = latest_year[['Holiday', '#Order', 'Discount', 'Store_id']]
     n = len(log_sales_series)
+
     train_end = int(n * 0.8)
     val_end = int(n * 0.9)
 
     train_y = log_sales_series[:train_end]
     val_y = log_sales_series[train_end:val_end]
+    test_y = log_sales_series[val_end:]
+
     train_exog = exog[:train_end]
     val_exog = exog[train_end:val_end]
+    test_exog = exog[val_end:]
 
+    # Train on train set, validate on val set
     model = ARIMA(train_y, order=(2, 1, 2), exog=train_exog)
     model_fit = model.fit()
 

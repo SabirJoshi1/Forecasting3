@@ -2,15 +2,16 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.graph_objs as go
-from statsmodels.tsa.arima.model import ARIMA
-from sklearn.metrics import mean_squared_error
 from modules.loader import load_data
-from modules.forecast import apply_arimax
+from modules.forecast import run_full_forecast_pipeline
 
-st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
-
-# --- Custom CSS Style ---
-st.markdown("""
+# ======================
+# STREAMLIT CONFIGURATION
+# ======================
+def setup_page():
+    st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
+    
+    st.markdown("""
     <style>
         body {
             background-image: url('1B.jpg');
@@ -41,193 +42,143 @@ st.markdown("""
             padding-bottom: 1rem;
         }
     </style>
-""", unsafe_allow_html=True)
-
-# --- Header ---
-st.markdown("<h1 style='text-align: center;'>📊 SARS Forecasting Platform</h1>", unsafe_allow_html=True)
-
-st.markdown("""
-<h2>Welcome</h2>
-<p class='section-text'>
-    Upload last year's sales data to forecast future sales using ARIMAX.
-    This tool helps reduce stockouts, optimize inventory, and improve performance.
-</p>
-""", unsafe_allow_html=True)
-
-# --- File Upload ---
-uploaded_file = st.file_uploader("📁 Upload Last Year Sales File (CSV)", type=["csv"])
-if not uploaded_file:
-    st.warning("⚠️ Please upload a CSV file to continue.")
-    st.stop()
-
-raw_df = load_data(uploaded_file)
-
-# --- Sidebar Filters ---
-if 'filters_applied' not in st.session_state:
-    st.session_state.filters_applied = False
-
-with st.sidebar:
-    st.header("🔎 Filter Parameters")
-    selected_region = st.selectbox("🌍 Select Region", sorted(raw_df['Region_Code'].unique()))
-    selected_store_type = st.selectbox("🏪 Select Store Type", sorted(raw_df['Store_Type'].unique()))
-    selected_location_type = st.selectbox("📍 Select Location Type", sorted(raw_df['Location_Type'].unique()))
-    if st.button("✅ Apply Filters"):
-        st.session_state.filters_applied = True
-
-if not st.session_state.filters_applied:
-    st.stop()
-
-filtered_df = raw_df[
-    (raw_df['Region_Code'] == selected_region) &
-    (raw_df['Store_Type'] == selected_store_type) &
-    (raw_df['Location_Type'] == selected_location_type)
-]
-
-forecast_df, inventory_df, summary_df, forecast, actual, val_dates, safety_stock, recommended_stock, rmse = apply_arimax(filtered_df)
-
-# --- Dashboard Tabs ---
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📁 Download Reports", "⚖️ Scenario Comparison"])
-
-with tab1:
-    st.header("🎯 Forecasting Objective")
-    st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
-
-    st.subheader("📌 Key Performance Indicators")
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"""
-        <div title='Total number of days in the forecast evaluation period'>
-            <h4 style='margin-bottom: 0.2rem;'>🗓️ Forecast Period</h4>
-            <p style='font-size: 24px; font-weight: bold; margin: 0;'>{len(val_dates)} days</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div title='Average predicted sales value over the forecast period'>
-            <h4 style='margin-bottom: 0.2rem;'>📈 Avg Forecasted Sales</h4>
-            <p style='font-size: 24px; font-weight: bold; margin: 0;'>${forecast.mean():,.0f}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div title='Root Mean Squared Error – measures forecast accuracy'>
-            <h4 style='margin-bottom: 0.2rem;'>📉 Validation RMSE</h4>
-            <p style='font-size: 24px; font-weight: bold; margin: 0;'>${rmse:,.0f}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Forecast Chart
-    st.subheader("📉 Forecast vs Actual Sales")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=val_dates, y=actual, mode='lines', name='Actual', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
-    fig.add_trace(go.Scatter(x=val_dates, y=forecast, mode='lines', name='Forecast', hovertemplate='Date: %{x}<br>Sales: %{y:.0f}'))
-    fig.update_layout(title='Forecast vs Actual', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
-
-   
-    # Forecast Table
-    st.subheader("📋 Forecast Table")
-    st.dataframe(forecast_df.style.format({
-        "Actual Sales": "{:.0f}",
-        "Forecasted Sales": "{:.0f}"
-    }), use_container_width=True)
-    
-     # Inventory Plan
-    st.subheader("📦 Inventory Plan")
-    st.dataframe(inventory_df.style.format({
-        "Forecasted Sales": "{:.0f}",
-        "Recommended Stock Level": "{:.0f}",
-        "Safety Stock": "{:.0f}"
-    }), use_container_width=True)
-
-
-
-with st.container():
-    st.markdown("""
-    <div class="section">
-        <h2>📈 Forecast vs Recommended Inventory Level</h2>
-        <p style='font-size:14px;'>This visualization shows how recommended inventory levels align with forecasted sales, helping to plan restocking cycles and avoid shortages or surplus.</p>
     """, unsafe_allow_html=True)
 
-    # Line: Forecasted Sales
-    forecast_trace = go.Scatter(
-        x=val_dates,
-        y=forecast,
-        mode='lines',
-        name=f'Forecasted Sales - {selected_store_type}',
-        line=dict(color='blue')
-    )
+# ======================
+# DATA LOADING & FILTERING
+# ======================
+def load_and_filter_data():
+    st.markdown("<h1 style='text-align: center;'>📊 SARS Forecasting Platform</h1>", unsafe_allow_html=True)
+    st.markdown("""
+    <h2>Welcome</h2>
+    <p class='section-text'>
+        Upload last year's sales data to forecast future sales using ARIMAX.
+        This tool helps reduce stockouts, optimize inventory, and improve performance.
+    </p>
+    """, unsafe_allow_html=True)
 
-    # Line: Recommended Stock Level
-    stock_trace = go.Scatter(
-        x=val_dates,
-        y=recommended_stock,
-        mode='lines',
-        name='Recommended Stock Level',
-        line=dict(dash='dash', color='orange')
-    )
+    uploaded_file = st.file_uploader("📁 Upload Last Year Sales File (CSV)", type=["csv"])
+    if not uploaded_file:
+        st.warning("⚠️ Please upload a CSV file to continue.")
+        st.stop()
 
-    # Area: Safety Buffer (between forecast and recommended stock)
-    upper = go.Scatter(
-        x=val_dates,
-        y=np.maximum(forecast, recommended_stock),
-        mode='lines',
-        line=dict(width=0),
-        showlegend=False
-    )
+    raw_df = load_data(uploaded_file)
 
-    lower = go.Scatter(
-        x=val_dates,
-        y=np.minimum(forecast, recommended_stock),
-        mode='lines',
-        fill='tonexty',
-        name='Safety Buffer',
-        fillcolor='rgba(255,165,0,0.3)',
-        line=dict(width=0)
-    )
+    if 'filters_applied' not in st.session_state:
+        st.session_state.filters_applied = False
 
-    layout = go.Layout(
-        title='Forecast vs Recommended Inventory Level',
-        xaxis_title='Date',
-        yaxis_title='Sales Volume',
-        hovermode='x unified'
-    )
+    with st.sidebar:
+        st.header("🔎 Filter Parameters")
+        selected_region = st.selectbox("🌍 Select Region", sorted(raw_df['Region_Code'].unique()))
+        selected_store_type = st.selectbox("🏪 Select Store Type", sorted(raw_df['Store_Type'].unique()))
+        selected_location_type = st.selectbox("📍 Select Location Type", sorted(raw_df['Location_Type'].unique()))
+        if st.button("✅ Apply Filters"):
+            st.session_state.filters_applied = True
 
-    fig = go.Figure(data=[forecast_trace, stock_trace, upper, lower], layout=layout)
-    st.plotly_chart(fig, use_container_width=True)
+    if not st.session_state.filters_applied:
+        st.stop()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    return raw_df[
+        (raw_df['Region_Code'] == selected_region) &
+        (raw_df['Store_Type'] == selected_store_type) &
+        (raw_df['Location_Type'] == selected_location_type)
+    ]
 
+# ======================
+# VISUALIZATION COMPONENTS
+# ======================
+def create_forecast_chart(test_dates, actual, forecast):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=test_dates, y=actual, mode='lines', name='Actual'))
+    fig.add_trace(go.Scatter(x=test_dates, y=forecast, mode='lines', name='Forecast'))
+    fig.update_layout(title='Forecast vs Actual', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified')
+    return fig
 
-   
+def create_inventory_chart(test_dates, forecast, recommended_stock):
+    forecast_trace = go.Scatter(x=test_dates, y=forecast, mode='lines', name='Forecasted Sales', line=dict(color='blue'))
+    stock_trace = go.Scatter(x=test_dates, y=recommended_stock, mode='lines', name='Recommended Stock', line=dict(dash='dash', color='orange'))
+    upper = go.Scatter(x=test_dates, y=np.maximum(forecast, recommended_stock), mode='lines', line=dict(width=0), showlegend=False)
+    lower = go.Scatter(x=test_dates, y=np.minimum(forecast, recommended_stock), mode='lines', fill='tonexty', name='Safety Buffer', fillcolor='rgba(255,165,0,0.3)', line=dict(width=0))
+    return go.Figure(data=[forecast_trace, stock_trace, upper, lower], layout=go.Layout(title='Forecast vs Recommended Inventory Level', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified'))
 
-with tab2:
+# ======================
+# MAIN DASHBOARD TABS
+# ======================
+def show_kpi_metrics(test_dates, forecast, rmse):
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🗓️ Forecast Period", f"{len(test_dates)} days")
+    col2.metric("📈 Avg Forecasted Sales", f"${forecast.mean():,.0f}")
+    col3.metric("📉 Validation RMSE", f"${rmse:,.0f}")
+
+def show_forecast_tab(forecast_df, inventory_df, test_dates, actual, forecast, recommended_stock, rmse):
+    st.header("🎯 Forecasting Objective")
+    st.markdown("This dashboard uses ARIMAX to improve inventory accuracy and reduce operational risks.")
+    st.subheader("📌 Key Performance Indicators")
+    show_kpi_metrics(test_dates, forecast, rmse)
+    st.subheader("📉 Forecast vs Actual Sales")
+    st.plotly_chart(create_forecast_chart(test_dates, actual, forecast), use_container_width=True)
+    st.subheader("📋 Forecast Table")
+    st.dataframe(forecast_df, use_container_width=True)
+    st.subheader("📦 Inventory Plan")
+    st.dataframe(inventory_df, use_container_width=True)
+    st.subheader("📈 Forecast vs Recommended Inventory Level")
+    st.plotly_chart(create_inventory_chart(test_dates, forecast, recommended_stock), use_container_width=True)
+
+def show_reports_tab(forecast_df, inventory_df):
     st.header("📁 Download Reports")
     st.download_button("Download Forecast Table", forecast_df.to_csv(index=False), "forecast.csv")
     st.download_button("Download Inventory Plan", inventory_df.to_csv(index=False), "inventory.csv")
 
-with tab3:
+def show_scenario_tab(summary_df, mae):
     st.header("⚖️ Scenario Comparison")
-    st.dataframe(summary_df.style.format({
-        "Forecasted Sales": "{:.0f}",
-        "Actual Sales": "{:.0f}",
-        "Error": "{:+.0f}",
-        "Recommended Stock": "{:.0f}",
-        "Safety Stock": "{:.0f}"
-    }), use_container_width=True)
-
+    st.dataframe(summary_df, use_container_width=True)
     st.subheader("🔍 Insights")
     total_error = summary_df['Error'].abs().sum()
     avg_stock_buffer = summary_df['Safety Stock'].mean()
     days_understock = (summary_df['Error'] > avg_stock_buffer).sum()
-
     st.markdown(f"""
     - **Total Absolute Forecast Error:** {total_error:,.0f} units  
     - **Average Safety Stock:** {avg_stock_buffer:,.0f} units  
-    - **Days Understocked:** {days_understock} days
+    - **Days Understocked:** {days_understock} days  
+    - **Validation MAE:** {mae:,.0f} units  
     """)
+
+def show_comparison_tab(rmse, baseline_rmse_naive, baseline_rmse_mean):
+    st.header("📏 Model Comparison")
+    st.markdown("Compare RMSE values to benchmark ARIMAX against simpler methods:")
+    comparison_df = pd.DataFrame({
+        'Model': ['ARIMAX', 'Naive', 'Mean'],
+        'RMSE': [rmse, baseline_rmse_naive, baseline_rmse_mean]
+    })
+    st.dataframe(comparison_df)
+    fig = go.Figure(go.Bar(x=comparison_df['Model'], y=comparison_df['RMSE'], marker_color=['deepskyblue', 'lightgray', 'gray']))
+    fig.update_layout(title="RMSE Comparison", xaxis_title="Model", yaxis_title="RMSE")
+    st.plotly_chart(fig, use_container_width=True)
+
+# ======================
+# MAIN APPLICATION FLOW
+# ======================
+def main():
+    setup_page()
+    filtered_df = load_and_filter_data()
+    try:
+        results = run_full_forecast_pipeline(filtered_df)
+        if results is None:
+            return
+
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📁 Download Reports", "⚖️ Scenario Comparison", "📏 Model Comparison"])
+
+        with tab1:
+            show_forecast_tab(results['forecast_df'], results['inventory_df'], results['test_dates'], results['actual'], results['forecast'], results['recommended_stock'], results['rmse'])
+        with tab2:
+            show_reports_tab(results['forecast_df'], results['inventory_df'])
+        with tab3:
+            show_scenario_tab(results['summary_df'], results['mae'])
+        with tab4:
+            show_comparison_tab(results['rmse'], results['baseline_rmse_naive'], results['baseline_rmse_mean'])
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+
+if __name__ == "__main__":
+    main()

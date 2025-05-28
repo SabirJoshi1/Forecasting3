@@ -1,8 +1,8 @@
-
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import TimeSeriesSplit
 
 def run_baseline_naive(series):
     forecast = series.shift(1).dropna()
@@ -12,6 +12,28 @@ def run_baseline_naive(series):
 def run_baseline_mean(series):
     forecast = pd.Series(series.mean(), index=series.index)
     return series, forecast
+
+def cross_validate_model(series, exog, n_splits=5):
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    rmse_scores = []
+
+    for train_index, test_index in tscv.split(series):
+        train_y, test_y = series.iloc[train_index], series.iloc[test_index]
+        train_exog, test_exog = exog.iloc[train_index], exog.iloc[test_index]
+
+        try:
+            model = ARIMA(train_y, order=(2, 1, 2), exog=train_exog)
+            model_fit = model.fit()
+            forecast_log = model_fit.forecast(steps=len(test_y), exog=test_exog)
+            forecast = np.expm1(forecast_log)
+            actual = np.expm1(test_y)
+            rmse = np.sqrt(mean_squared_error(actual, forecast))
+            rmse_scores.append(rmse)
+        except Exception:
+            rmse_scores.append(np.nan)
+            continue
+
+    return rmse_scores
 
 def run_full_forecast_pipeline(df):
     if df.empty or len(df) < 30:
@@ -87,6 +109,9 @@ def run_full_forecast_pipeline(df):
     baseline_actual_mean, baseline_forecast_mean = run_baseline_mean(actual)
     baseline_rmse_mean = np.sqrt(mean_squared_error(baseline_actual_mean, baseline_forecast_mean))
 
+    # Cross-validation RMSE
+    cv_rmse_scores = cross_validate_model(log_sales_series, exog)
+
     return {
         'forecast_df': forecast_df,
         'inventory_df': inventory_df,
@@ -99,5 +124,6 @@ def run_full_forecast_pipeline(df):
         'rmse': rmse,
         'mae': mae,
         'baseline_rmse_naive': baseline_rmse_naive,
-        'baseline_rmse_mean': baseline_rmse_mean
+        'baseline_rmse_mean': baseline_rmse_mean,
+        'cv_rmse_scores': cv_rmse_scores
     }

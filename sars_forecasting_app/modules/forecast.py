@@ -1,3 +1,8 @@
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error
+
 def apply_arimax(df):
     if df.empty or len(df) < 30:
         raise ValueError("❗ Not enough data for forecasting. Please adjust your filters.")

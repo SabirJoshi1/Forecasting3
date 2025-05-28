@@ -165,12 +165,20 @@ def main():
             cv_scores = results['cv_rmse_scores']
             st.write("RMSE per Fold:", cv_scores)
 
-            fig, ax = plt.subplots()
-            ax.plot(range(1, len(cv_scores) + 1), cv_scores, marker='o')
-            ax.set_title("Cross-Validation RMSE")
-            ax.set_xlabel("Fold")
-            ax.set_ylabel("RMSE")
-            st.pyplot(fig)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(cv_scores) + 1)),
+                y=cv_scores,
+                mode="lines+markers",
+                name="RMSE"
+            ))
+            fig.update_layout(
+                title="Cross-Validation RMSE",
+                xaxis_title="Fold",
+                yaxis_title="RMSE",
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
             st.write(f"Average RMSE: {np.nanmean(cv_scores):,.2f}")
 

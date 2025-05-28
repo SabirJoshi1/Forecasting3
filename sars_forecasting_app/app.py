@@ -4,13 +4,14 @@ import streamlit as st
 import plotly.graph_objs as go
 from modules.loader import load_data
 from modules.forecast import run_full_forecast_pipeline
+import matplotlib.pyplot as plt
 
 # ======================
 # STREAMLIT CONFIGURATION
 # ======================
 def setup_page():
     st.set_page_config(page_title="SARS Forecasting Platform", layout="wide")
-    
+
     st.markdown("""
     <style>
         body {
@@ -101,9 +102,6 @@ def create_inventory_chart(test_dates, forecast, recommended_stock):
     lower = go.Scatter(x=test_dates, y=np.minimum(forecast, recommended_stock), mode='lines', fill='tonexty', name='Safety Buffer', fillcolor='rgba(255,165,0,0.3)', line=dict(width=0))
     return go.Figure(data=[forecast_trace, stock_trace, upper, lower], layout=go.Layout(title='Forecast vs Recommended Inventory Level', xaxis_title='Date', yaxis_title='Sales Volume', hovermode='x unified'))
 
-# ======================
-# MAIN DASHBOARD TABS
-# ======================
 def show_kpi_metrics(test_dates, forecast, rmse):
     col1, col2, col3 = st.columns(3)
     col1.metric("🗓️ Forecast Period", f"{len(test_dates)} days")
@@ -143,18 +141,6 @@ def show_scenario_tab(summary_df, mae):
     - **Validation MAE:** {mae:,.0f} units  
     """)
 
-def show_comparison_tab(rmse, baseline_rmse_naive, baseline_rmse_mean):
-    st.header("📏 Model Comparison")
-    st.markdown("Compare RMSE values to benchmark ARIMAX against simpler methods:")
-    comparison_df = pd.DataFrame({
-        'Model': ['ARIMAX', 'Naive', 'Mean'],
-        'RMSE': [rmse, baseline_rmse_naive, baseline_rmse_mean]
-    })
-    st.dataframe(comparison_df)
-    fig = go.Figure(go.Bar(x=comparison_df['Model'], y=comparison_df['RMSE'], marker_color=['deepskyblue', 'lightgray', 'gray']))
-    fig.update_layout(title="RMSE Comparison", xaxis_title="Model", yaxis_title="RMSE")
-    st.plotly_chart(fig, use_container_width=True)
-
 # ======================
 # MAIN APPLICATION FLOW
 # ======================
@@ -166,7 +152,7 @@ def main():
         if results is None:
             return
 
-        tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📁 Download Reports", "⚖️ Scenario Comparison", "📏 Model Comparison"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📁 Download Reports", "⚖️ Scenario Comparison", "🔁 Cross-Validation"])
 
         with tab1:
             show_forecast_tab(results['forecast_df'], results['inventory_df'], results['test_dates'], results['actual'], results['forecast'], results['recommended_stock'], results['rmse'])
@@ -175,7 +161,18 @@ def main():
         with tab3:
             show_scenario_tab(results['summary_df'], results['mae'])
         with tab4:
-            show_comparison_tab(results['rmse'], results['baseline_rmse_naive'], results['baseline_rmse_mean'])
+            st.header("🔁 Cross-Validation Results")
+            cv_scores = results['cv_rmse_scores']
+            st.write("RMSE per Fold:", cv_scores)
+
+            fig, ax = plt.subplots()
+            ax.plot(range(1, len(cv_scores) + 1), cv_scores, marker='o')
+            ax.set_title("Cross-Validation RMSE")
+            ax.set_xlabel("Fold")
+            ax.set_ylabel("RMSE")
+            st.pyplot(fig)
+
+            st.write(f"Average RMSE: {np.nanmean(cv_scores):,.2f}")
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
